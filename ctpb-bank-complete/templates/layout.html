@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block body_class %}app{% endblock %}
+{% block body %}
+{% macro navlink(endpoint, label, icon) -%}
+  <a class="nav-item {{ 'active' if request.endpoint == endpoint }}" href="{{ url_for(endpoint) }}">
+    <svg viewBox="0 0 24 24" class="ico"><path d="{{ icon }}" fill="currentColor"/></svg>{{ label }}
+  </a>
+{%- endmacro %}
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('auth.index') }}">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#16224a"/><stop offset="1" stop-color="#0a1128"/>
+        </linearGradient></defs>
+        <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#lg)" stroke="#f0b429" stroke-opacity=".35"/>
+        <path d="M16 7l7 9-7 9-7-9z" fill="#f0b429"/>
+      </svg>
+      <span class="brand-name">CTPB <small>digital bank</small></span>
+    </a>
+
+    <nav class="nav">
+      {% if session.get('role') == 'admin' %}
+        {{ navlink('admin.dashboard', 'Command centre', 'M3 13h4v8H3zM10 9h4v12h-4zM17 5h4v16h-4z') }}
+        {{ navlink('admin.customers', 'Customers', 'M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 9a6 6 0 0 1 12 0v1H4z') }}
+        {{ navlink('admin.transactions', 'Ledger', 'M4 5h16v3H4zm0 5h16v3H4zm0 5h10v3H4z') }}
+      {% else %}
+        {{ navlink('user.dashboard', 'Dashboard', 'M3 12l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z') }}
+        {{ navlink('user.transactions', 'Transactions', 'M4 6h16v3H4zm0 5h16v3H4zm0 5h10v3H4z') }}
+        {{ navlink('user.profile', 'Profile & accounts', 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-7 8a7 7 0 0 1 14 0v1H5z') }}
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="session-pill" title="For your security you will be signed out when the timer ends">
+        <span class="dot"></span>
+        Session <span id="session-timer" data-seconds="{{ cfg.session_lifetime.seconds | int }}">--:--</span>
+      </div>
+      <a class="btn btn-ghost btn-block" href="{{ url_for('auth.logout') }}">Sign out</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar glass">
+      <div>
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+        <p class="page-sub">{% block page_sub %}{% endblock %}</p>
+      </div>
+      <div class="user-chip">
+        <span class="avatar">{{ (user.full_name if user else '?') | initials }}</span>
+        <span class="user-meta">
+          <strong>{{ user.full_name if user else 'Guest' }}</strong>
+          <small>{{ 'Administrator' if session.get('role') == 'admin' else 'Personal banking' }}</small>
+        </span>
+      </div>
+    </header>
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}

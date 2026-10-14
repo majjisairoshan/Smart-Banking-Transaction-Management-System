@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Something broke{% endblock %}
+{% block body_class %}auth{% endblock %}
+{% block body %}
+<div class="error-wrap">
+  <div class="error-card glass">
+    <svg class="brand-mark big" viewBox="0 0 32 32"><rect x="2" y="2" width="28" height="28" rx="8" fill="#0a1128" stroke="#fb5e6e" stroke-opacity=".4"/><path d="M16 7l7 9-7 9-7-9z" fill="#fb5e6e"/></svg>
+    <h1>500</h1>
+    <p class="muted">Our systems hiccuped. If you were moving money, don't retry blindly — every transfer is idempotent, so check your history first.</p>
+    <a class="btn btn-gold" href="{{ url_for('auth.index') }}">← Back to dashboard</a>
+  </div>
+</div>
+{% endblock %}

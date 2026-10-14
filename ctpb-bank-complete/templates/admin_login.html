@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Admin console{% endblock %}
+{% block body_class %}auth auth-admin{% endblock %}
+{% block body %}
+<div class="auth-wrap flip">
+  <section class="auth-visual" style="background-image:url('{{ url_for('static', filename='img/admin-hero.jpg') }}')">
+    <div class="visual-overlay">
+      <p class="kicker teal">CTPB · Back office</p>
+      <h2>The bank's<br><em>command centre</em>.</h2>
+      <ul class="ticks">
+        <li>Portfolio-wide liquidity at a glance</li>
+        <li>Flagged-transaction review queue</li>
+        <li>One-click concurrent interest accrual</li>
+      </ul>
+      <div class="badges">
+        <span>Role-guarded</span><span>Rate-limited</span><span>Full audit trail</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="auth-panel">
+    <a class="brand brand-lg" href="{{ url_for('auth.admin_login') }}">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="2" y="2" width="28" height="28" rx="8" fill="#0a1128" stroke="#2dd4bf" stroke-opacity=".5"/>
+        <path d="M16 7l7 9-7 9-7-9z" fill="#2dd4bf"/>
+      </svg>
+      <span class="brand-name">CTPB <small>admin console</small></span>
+    </a>
+
+    <h1 class="auth-title">Administrator<span class="teal">.</span></h1>
+    <p class="muted">Restricted area. All sign-in attempts are throttled and logged.</p>
+
+    <form method="post" class="stack" novalidate>
+      <label class="field">
+        <span>Admin username</span>
+        <input class="input" name="username" required autocomplete="username" placeholder="admin" autofocus>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input class="input" type="password" name="password" required
+               autocomplete="current-password" placeholder="••••••••">
+      </label>
+      <button class="btn btn-teal btn-block btn-lg" type="submit">Enter console →</button>
+    </form>
+
+    <div class="demo-hint teal">
+      <span class="pulse-dot"></span>
+      <div><strong>Live demo credentials</strong><br>
+        <code>admin</code> &nbsp;/&nbsp; <code>Admin@123</code></div>
+    </div>
+
+    <p class="switch-link">Not staff? <a href="{{ url_for('auth.login') }}">← Customer sign in</a></p>
+  </section>
+</div>
+{% endblock %}

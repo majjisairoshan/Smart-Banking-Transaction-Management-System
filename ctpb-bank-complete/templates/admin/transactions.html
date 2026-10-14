@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block title %}Ledger{% endblock %}
+{% block page_title %}Transaction ledger{% endblock %}
+{% block page_sub %}{{ d.total }} record(s){% if flagged %} · flagged queue{% endif %}{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="filter-bar">
+    <a class="chip {{ 'chip-teal' if not flagged }}" href="{{ url_for('admin.transactions') }}">All transactions</a>
+    <a class="chip {{ 'chip-warn' if flagged }}" href="{{ url_for('admin.transactions', flagged=1) }}">⚑ Flagged only</a>
+  </div>
+  {% if d.rows %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>When (IST)</th><th>From → To</th><th>Type</th><th>Reference</th><th>Note</th><th>Status</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        {% for t in d.rows %}
+        <tr>
+          <td class="nowrap">{{ t.created_at | ist }}</td>
+          <td><small>{{ (t.from_name or '— Bank —') }} <span class="muted">{{ t.from_number }}</span> → {{ t.to_name }} <span class="muted">{{ t.to_number }}</span></small></td>
+          <td><span class="badge info">{{ t.txn_type.value }}</span></td>
+          <td><code class="ref">{{ t.txn_ref }}</code></td>
+          <td><small class="muted">{{ t.note or '—' }}</small></td>
+          <td>{% if t.status.value == 'flagged' %}<span class="badge warn">⚑ flagged</span>{% else %}<span class="badge ok">{{ t.status.value }}</span>{% endif %}</td>
+          <td class="num"><strong>{{ t.amount | inr }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if not flagged and d.pages > 1 %}
+  <nav class="pagination">
+    {% for p in range(1, d.pages + 1) %}
+      {% if p == 1 or p == d.pages or (p - d.page) | abs <= 2 %}
+      <a class="page-link {{ 'active' if p == d.page }}" href="{{ url_for('admin.transactions', page=p) }}">{{ p }}</a>
+      {% elif (p - d.page) | abs == 3 %}<span class="page-gap">…</span>{% endif %}
+    {% endfor %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <p class="empty-state">Queue is empty. 🎉</p>
+  {% endif %}
+</section>
+{% endblock %}

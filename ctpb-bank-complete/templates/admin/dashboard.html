@@ -1,0 +1,109 @@
+{% extends "layout.html" %}
+{% block title %}Command centre{% endblock %}
+{% block page_title %}Command centre{% endblock %}
+{% block page_sub %}Portfolio-wide view · {{ now_utc | ist('%A, %d %B %Y, %I:%M %p') }} IST{% endblock %}
+{% block content %}
+<section class="hero admin-hero" style="background-image:url('{{ url_for('static', filename='img/admin-hero.jpg') }}')">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <p class="hero-kicker teal">Total deposits under management</p>
+      <h2 class="hero-balance" data-count="{{ s.total_liabilities }}">{{ s.total_liabilities | inr }}</h2>
+      <div class="hero-actions">
+        <form method="post" action="{{ url_for('admin.interest_run') }}">
+          <button class="btn btn-teal" type="submit" title="Credits this month's savings interest. Thread-pooled, row-locked, idempotent.">▶ Run interest accrual</button>
+        </form>
+        <a class="btn btn-glass" href="{{ url_for('admin.customers') }}">👥 Manage customers</a>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="mini-stat"><small>Today · volume</small><strong>{{ s.today_volume | inr }}</strong></div>
+      <div class="mini-stat"><small>Today · transactions</small><strong>{{ s.today_count }}</strong></div>
+    </div>
+  </div>
+</section>
+
+<section class="grid-4">
+  <div class="stat-card"><small>Customers</small><strong>{{ s.customers }}</strong><span class="stat-foot">active retail base</span></div>
+  <div class="stat-card"><small>Savings accounts</small><strong>{{ s.accounts_by_type.get('savings', 0) }}</strong><span class="stat-foot">4% p.a. book</span></div>
+  <div class="stat-card"><small>Current accounts</small><strong>{{ s.accounts_by_type.get('current', 0) }}</strong><span class="stat-foot">OD facility ₹50K</span></div>
+  <div class="stat-card warn-card"><small>Flagged queue</small><strong>{{ s.flagged | length }}</strong><span class="stat-foot">needs review</span></div>
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <div class="card-head"><h3>Transaction volume · 14 days</h3></div>
+    {% set ns = namespace(peak=1) %}
+    {% for d, v in s.volume_by_day %}{% if v > ns.peak %}{% set ns.peak = v %}{% endif %}{% endfor %}
+    <div class="bars bars-wide">
+      {% for d, v in s.volume_by_day %}
+      <div class="bar-group" title="{{ d.strftime('%d %b') }} — {{ v | inr }}">
+        <div class="bar-pair"><div class="bar teal-b" style="height: {{ (v / ns.peak * 100) | round(1) }}%"></div></div>
+        <small>{{ d.strftime('%d') }}</small>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Largest recent transactions</h3>
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.transactions') }}">Ledger →</a></div>
+    <table class="data-table">
+      <tbody>
+        {% for t in s.largest %}
+        <tr>
+          <td><code class="ref">{{ t.txn_ref }}</code></td>
+          <td><small class="muted">{{ (t.from_name or t.from_number) or 'Bank' }} → {{ t.to_name or t.to_number }}</small></td>
+          <td class="num"><strong>{{ t.amount | inr }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h3>⚑ Flagged for review</h3>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.transactions', flagged=1) }}">Open queue →</a></div>
+  {% if s.flagged %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>When</th><th>From</th><th>To</th><th>Reference</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        {% for t in s.flagged %}
+        <tr>
+          <td class="nowrap">{{ t.created_at | ist('%d %b, %I:%M %p') }}</td>
+          <td>{{ t.from_name }} <small class="muted">{{ t.from_number }}</small></td>
+          <td>{{ t.to_name }} <small class="muted">{{ t.to_number }}</small></td>
+          <td><code class="ref">{{ t.txn_ref }}</code></td>
+          <td class="num down"><strong>{{ t.amount | inr }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="hint">Flag rules: amount ≥ ₹1,00,000 or 3+ outbound transfers within 60s (see <code>bank/algorithms.py</code>).</p>
+  {% else %}
+  <p class="empty-state">All clear — no flagged transactions. 🎉</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <div class="card-head"><h3>Live ledger</h3><span class="chip chip-teal">10 latest</span></div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>When</th><th>From → To</th><th>Type</th><th>Reference</th><th>Status</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        {% for t in s.recent %}
+        <tr>
+          <td class="nowrap">{{ t.created_at | ist('%d %b, %I:%M %p') }}</td>
+          <td><small class="muted">{{ (t.from_name or '— Bank —') }} → {{ t.to_name }}</small></td>
+          <td><span class="badge info">{{ t.txn_type.value }}</span></td>
+          <td><code class="ref">{{ t.txn_ref }}</code></td>
+          <td>{% if t.status.value == 'flagged' %}<span class="badge warn">⚑ flagged</span>{% else %}<span class="badge ok">{{ t.status.value }}</span>{% endif %}</td>
+          <td class="num">{{ t.amount | inr }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

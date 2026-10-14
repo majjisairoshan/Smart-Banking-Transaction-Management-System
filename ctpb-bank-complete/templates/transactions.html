@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+{% block title %}Transactions{% endblock %}
+{% block page_title %}Transactions{% endblock %}
+{% block page_sub %}{{ h.total }} record(s) · hand-rolled merge sort · {{ h.sort_elapsed_us }} µs per page{% endblock %}
+{% block content %}
+<section class="card">
+  <form class="filter-bar" method="get" action="{{ url_for('user.transactions') }}">
+    <label>Type
+      <select class="input input-sm" name="type" data-autosubmit>
+        {% for v, label in [('', 'All'), ('transfer', 'Transfers'), ('deposit', 'Deposits'), ('withdrawal', 'Withdrawals'), ('interest', 'Interest')] %}
+        <option value="{{ v }}" {{ 'selected' if txn_type == v }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Sort
+      <select class="input input-sm" name="sort" data-autosubmit>
+        {% for v, label in [('date_desc', 'Newest first'), ('date_asc', 'Oldest first'), ('amount_desc', 'Amount high → low'), ('amount_asc', 'Amount low → high')] %}
+        <option value="{{ v }}" {{ 'selected' if sort == v }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <span class="chip chip-gold" title="This page was re-ordered by our own divide & conquer merge sort, timed honestly.">⚡ merge sort · {{ h.sort_elapsed_us }} µs</span>
+  </form>
+
+  {% if h.items %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>When (IST)</th><th>Details</th><th>Type</th><th>Reference</th><th>Status</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        {% for t in h.items %}
+        {% set dir = t.direction_for(h.account_ids) %}
+        <tr>
+          <td class="nowrap">{{ t.created_at | ist }}</td>
+          <td>{{ t.note or (t.txn_type.value | title) }} <small class="muted">· {{ t.counterparty_for(h.account_ids) }}</small></td>
+          <td><span class="badge info">{{ t.txn_type.value }}</span></td>
+          <td><code class="ref">{{ t.txn_ref }}</code></td>
+          <td>{% if t.status.value == 'flagged' %}<span class="badge warn">⚑ flagged</span>
+              {% else %}<span class="badge ok">{{ t.status.value }}</span>{% endif %}</td>
+          <td class="num {{ 'up' if dir == 'credit' else ('down' if dir == 'debit' else '') }}">
+            {{ '+' if dir == 'credit' else ('−' if dir == 'debit' else '±') }}{{ t.amount | inr }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if h.pages > 1 %}
+  <nav class="pagination">
+    <a class="page-link {{ 'disabled' if h.page <= 1 }}"
+       href="{{ url_for('user.transactions', page=h.page-1, type=txn_type, sort=sort) if h.page > 1 else '#' }}">← Prev</a>
+    {% for p in range(1, h.pages + 1) %}
+      {% if p == 1 or p == h.pages or (p - h.page) | abs <= 2 %}
+      <a class="page-link {{ 'active' if p == h.page }}" href="{{ url_for('user.transactions', page=p, type=txn_type, sort=sort) }}">{{ p }}</a>
+      {% elif (p - h.page) | abs == 3 %}<span class="page-gap">…</span>
+      {% endif %}
+    {% endfor %}
+    <a class="page-link {{ 'disabled' if h.page >= h.pages }}"
+       href="{{ url_for('user.transactions', page=h.page+1, type=txn_type, sort=sort) if h.page < h.pages else '#' }}">Next →</a>
+  </nav>
+  {% endif %}
+  {% else %}
+  <p class="empty-state">Nothing here yet — try widening the filter.</p>
+  {% endif %}
+</section>
+{% endblock %}

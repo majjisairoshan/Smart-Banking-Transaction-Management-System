@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% block title %}Profile{% endblock %}
+{% block page_title %}Profile & accounts{% endblock %}
+{% block page_sub %}Your identities, account details and security settings{% endblock %}
+{% block content %}
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h3>Your accounts</h3><span class="chip">IFSC {{ cfg.bank_ifsc }}</span></div>
+    {% for a in accounts %}
+    <div class="account-line">
+      <span class="acct-ico {{ a.account_type.value }}">{{ '💼' if a.account_type.value == 'current' else '🐷' }}</span>
+      <div class="acct-meta">
+        <strong>{{ a.account_type.value | title }} account</strong>
+        <small><code>{{ a.account_number }}</code>
+          <button class="chip-copy" data-copy="{{ a.account_number }}">⧉</button></small>
+        <small class="muted">Opened {{ a.created_at | ist('%d %b %Y') }}</small>
+      </div>
+      <div class="acct-right">
+        <strong>{{ a.balance | inr }}</strong>
+        <span class="badge {{ 'ok' if a.status.value == 'active' else 'bad' }}">{{ a.status.value }}</span>
+      </div>
+    </div>
+    {% endfor %}
+    <p class="hint">Savings keeps a ₹1,000 minimum balance and earns 4% p.a. · Current carries a ₹50,000 overdraft cushion.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h3>Contact & login</h3></div>
+    <div class="profile-line"><span class="avatar avatar-lg">{{ user.full_name | initials }}</span>
+      <div><strong>{{ user.full_name }}</strong><br><small class="muted">@{{ user.username }} · customer since {{ user.created_at | ist('%B %Y') }}</small></div>
+    </div>
+
+    <form method="post" class="stack">
+      <input type="hidden" name="action" value="email">
+      <label class="field"><span>Email address</span>
+        <input class="input" type="email" name="email" value="{{ user.email }}" required>
+      </label>
+      <button class="btn btn-glass" type="submit">Update email</button>
+    </form>
+
+    <hr class="sep">
+
+    <form method="post" class="stack">
+      <input type="hidden" name="action" value="password">
+      <label class="field"><span>Current password</span>
+        <input class="input" type="password" name="old_password" required autocomplete="current-password">
+      </label>
+      <label class="field"><span>New password <small class="muted">(min 8 chars)</small></span>
+        <input class="input" type="password" name="new_password" required autocomplete="new-password" minlength="8">
+      </label>
+      <button class="btn btn-gold" type="submit">Change password</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

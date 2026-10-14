@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+{% block title %}Customers{% endblock %}
+{% block page_title %}Customers{% endblock %}
+{% block page_sub %}{{ d.total }} customer(s) on the books{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head">
+    <form class="filter-bar" method="get" action="{{ url_for('admin.customers') }}">
+      <input class="input input-sm" name="q" value="{{ q }}" placeholder="Search name, username or email…">
+      <button class="btn btn-ghost btn-sm" type="submit">Search</button>
+      {% if q %}<a class="btn btn-ghost btn-sm" href="{{ url_for('admin.customers') }}">Clear</a>{% endif %}
+    </form>
+    <button class="btn btn-gold btn-sm" data-open-modal="createCustomerModal">＋ New customer</button>
+  </div>
+
+  {% if d.customers %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Customer</th><th>Contact</th><th>Accounts</th><th class="num">Total balance</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for cv in d.customers %}
+        <tr>
+          <td>
+            <div class="cust-cell">
+              <span class="avatar">{{ cv.user.full_name | initials }}</span>
+              <div><strong>{{ cv.user.full_name }}</strong><br><small class="muted">@{{ cv.user.username }}</small></div>
+            </div>
+          </td>
+          <td><small>{{ cv.user.email }}</small><br><small class="muted">joined {{ cv.user.created_at | ist('%d %b %Y') }}</small></td>
+          <td>
+            {% for a in cv.accounts %}
+            <div class="acct-badge">
+              <span class="dot {{ 'ok' if a.status.value == 'active' else 'bad' }}"></span>
+              {{ a.account_type.value }} <code>{{ a.account_number[-4:] }}</code>
+              <span class="muted">{{ a.balance | inr }}</span>
+            </div>
+            {% else %}<span class="muted">—</span>
+            {% endfor %}
+          </td>
+          <td class="num"><strong>{{ cv.total_balance | inr }}</strong></td>
+          <td>
+            {% for a in cv.accounts %}
+            <form method="post" action="{{ url_for('admin.account_status', account_id=a.id) }}" class="inline-form"
+                  data-confirm="{{ 'Unfreeze' if a.status.value == 'frozen' else 'Freeze' }} {{ a.account_type.value }} account {{ a.account_number }}?">
+              <input type="hidden" name="status" value="{{ 'active' if a.status.value == 'frozen' else 'frozen' }}">
+              <button class="btn btn-sm {{ 'btn-teal' if a.status.value == 'frozen' else 'btn-danger' }}" type="submit">
+                {{ '▶ unfreeze' if a.status.value == 'frozen' else '❄ freeze' }} {{ a.account_type.value }}
+              </button>
+            </form>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if d.pages > 1 %}
+  <nav class="pagination">
+    {% for p in range(1, d.pages + 1) %}
+    <a class="page-link {{ 'active' if p == d.page }}" href="{{ url_for('admin.customers', page=p, q=q) }}">{{ p }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <p class="empty-state">No customers match “{{ q }}”.</p>
+  {% endif %}
+</section>
+
+<div class="modal-backdrop" id="createCustomerModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head"><h3>＋ Open a new customer relationship</h3><button class="x" data-close-modal>×</button></div>
+    <form method="post" action="{{ url_for('admin.customer_new') }}">
+      <div class="modal-body stack">
+        <label class="field"><span>Full name</span><input class="input" name="full_name" required placeholder="e.g. Ananya Rao"></label>
+        <div class="form-row">
+          <label class="field"><span>Username</span><input class="input" name="username" required placeholder="ananya.rao"></label>
+          <label class="field"><span>Password <small class="muted">(min 8)</small></span><input class="input" name="password" required minlength="8" placeholder="welcome@123"></label>
+        </div>
+        <label class="field"><span>Email</span><input class="input" type="email" name="email" required placeholder="ananya@example.in"></label>
+        <div class="form-row">
+          <div class="field"><span>Accounts to open</span>
+            <label class="check"><input type="checkbox" name="account_types" value="savings" checked> 🐷 Savings</label>
+            <label class="check"><input type="checkbox" name="account_types" value="current" checked> 💼 Current</label>
+          </div>
+          <label class="field"><span>Opening balance (₹)</span><input class="input" name="opening_balance" value="5000.00"></label>
+        </div>
+      </div>
+      <div class="modal-foot"><button class="btn btn-gold" type="submit">Create customer</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

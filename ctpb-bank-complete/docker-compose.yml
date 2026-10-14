@@ -1,0 +1,35 @@
+# Spin up the whole bank — app + PostgreSQL database `CTPBD` — with:
+#     docker compose up --build
+# Customer portal: http://localhost:5000  (aarav.sharma / User@123)
+# Admin console:   http://localhost:5000/admin/login  (admin / Admin@123)
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: CTPBD
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d CTPBD"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/CTPBD
+      FLASK_SECRET_KEY: compose-demo-secret-change-me
+      PORT: "5000"
+    ports:
+      - "5000:5000"
+
+volumes:
+  pgdata:

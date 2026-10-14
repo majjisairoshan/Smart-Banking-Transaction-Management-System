@@ -1,0 +1,204 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Namaste, {{ user.full_name.split(' ')[0] }} 🙏{% endblock %}
+{% block page_sub %}Here is your money at a glance — {{ now_utc | ist('%A, %d %B %Y') }} {% endblock %}
+{% block content %}
+{% set income_total = ov.income_30d + ov.expense_30d %}
+
+<section class="hero" style="background-image:url('{{ url_for('static', filename='img/dash-hero.jpg') }}')" id="dashboardRoot">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <p class="hero-kicker">Total balance · {{ ov.accounts | length }} account(s)</p>
+      <h2 class="hero-balance" data-total-balance data-count="{{ ov.total_balance }}">{{ ov.total_balance | inr }}</h2>
+      {% if ov.spark_points %}
+      <svg class="spark" viewBox="0 0 132 40" aria-hidden="true">
+        <polyline points="{{ ov.spark_points }}" fill="none" stroke="#f0b429" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      {% endif %}
+      <div class="hero-actions">
+        <button class="btn btn-gold" data-open-modal="transferModal">⇄&nbsp; New transfer</button>
+        <button class="btn btn-glass" data-open-modal="validateModal">✓&nbsp; Validate account</button>
+        <button class="btn btn-glass" data-open-modal="notesModal">🏧&nbsp; Note breakdown</button>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="mini-stat"><small>In (30 days)</small><strong class="up">+{{ ov.income_30d | inr }}</strong></div>
+      <div class="mini-stat"><small>Out (30 days)</small><strong class="down">−{{ ov.expense_30d | inr }}</strong></div>
+    </div>
+  </div>
+</section>
+
+<section class="grid-2" id="account-cards">
+  {% for a in ov.accounts %}
+  <article class="account-card {{ a.account_type.value }}">
+    <div class="ac-top">
+      <span class="ac-type">{{ '💼' if a.account_type.value == 'current' else '🐷' }} {{ a.account_type.value }} account</span>
+      <span class="badge {{ 'ok' if a.status.value == 'active' else 'bad' }}">{{ a.status.value }}</span>
+    </div>
+    <div class="ac-mid">
+      <span class="ac-chip"></span>
+      <span class="ac-brand">CTPB</span>
+    </div>
+    <div class="ac-number">
+      <code>{{ a.account_number }}</code>
+      <button class="chip-copy" data-copy="{{ a.account_number }}" title="Copy account number">⧉ copy</button>
+    </div>
+    <div class="ac-bottom">
+      <span class="ac-ifsc">IFSC {{ cfg.bank_ifsc }}</span>
+      <span class="ac-balance" data-balance-id="{{ a.id }}">{{ a.balance | inr }}</span>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <div class="card-head"><h3>Money flow · last 30 days</h3></div>
+    <div class="donut-row">
+      {% set pct = (ov.income_30d / income_total * 100) if income_total > 0 else 50 %}
+      <div class="donut" style="--p: {{ pct | round(1) }}"><span>{{ pct | round(0, 'floor') | int }}%<small>inflow</small></span></div>
+      <ul class="legend">
+        <li><span class="sw gold"></span>Received <strong>{{ ov.income_30d | inr }}</strong></li>
+        <li><span class="sw slate"></span>Sent <strong>{{ ov.expense_30d | inr }}</strong></li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Monthly in / out</h3><span class="chip">6 months</span></div>
+    {% set ns = namespace(peak=1) %}
+    {% for m in ov.months %}
+      {% if m.income > ns.peak %}{% set ns.peak = m.income %}{% endif %}
+      {% if m.expense > ns.peak %}{% set ns.peak = m.expense %}{% endif %}
+    {% endfor %}
+    <div class="bars">
+      {% for m in ov.months %}
+      <div class="bar-group" title="{{ m.label }} — in {{ m.income | inr }} · out {{ m.expense | inr }}">
+        <div class="bar-pair">
+          <div class="bar in" style="height: {{ (m.income / ns.peak * 100) | round(1) }}%"></div>
+          <div class="bar out" style="height: {{ (m.expense / ns.peak * 100) | round(1) }}%"></div>
+        </div>
+        <small>{{ m.label }}</small>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h3>Recent activity</h3>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('user.transactions') }}">Full history →</a>
+  </div>
+  {% if ov.recent %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>When (IST)</th><th>Details</th><th>Type</th><th>Reference</th><th>Status</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        {% for t in ov.recent %}
+        {% set dir = t.direction_for(ov.account_ids) %}
+        <tr>
+          <td class="nowrap">{{ t.created_at | ist('%d %b, %I:%M %p') }}</td>
+          <td>{{ t.note or (t.txn_type.value | title) }} <small class="muted">· {{ t.counterparty_for(ov.account_ids) }}</small></td>
+          <td><span class="badge info">{{ t.txn_type.value }}</span></td>
+          <td><code class="ref">{{ t.txn_ref }}</code></td>
+          <td>{% if t.status.value == 'flagged' %}<span class="badge warn">⚑ flagged</span>
+              {% else %}<span class="badge ok">{{ t.status.value }}</span>{% endif %}</td>
+          <td class="num {{ 'up' if dir == 'credit' else ('down' if dir == 'debit' else '') }}">
+            {{ '+' if dir == 'credit' else ('−' if dir == 'debit' else '±') }}{{ t.amount | inr }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty-state">No transactions yet — make your first transfer.</p>
+  {% endif %}
+</section>
+
+{# ============================== MODALS ============================== #}
+<div class="modal-backdrop" id="transferModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>⇄ Transfer money</h3>
+      <button class="x" data-close-modal aria-label="Close">×</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="wiz-progress"><span class="wp-1 on"></span><span class="wp-2"></span></div>
+
+      <div id="tf-step1">
+        <label class="field">
+          <span>Beneficiary account number</span>
+          <input class="input mono" id="tf-number" inputmode="numeric" maxlength="12"
+                 placeholder="10-digit account number" autocomplete="off">
+        </label>
+        <button class="btn btn-glass btn-block" id="tf-validate" type="button">Validate account</button>
+        <div id="tf-payee" class="payee-slot"></div>
+      </div>
+
+      <div id="tf-step2" hidden>
+        <div class="payee-slot" id="tf-payee-summary"></div>
+        <label class="field">
+          <span>From account</span>
+          <select class="input" id="tf-from">
+            {% for a in ov.accounts %}
+            <option value="{{ a.id }}" data-balance="{{ a.balance }}" data-floor="{{ a.withdrawal_floor() }}">
+              {{ a.account_type.value | title }} ···· {{ a.account_number[-4:] }} — {{ a.balance | inr }}
+            </option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Amount (₹)</span>
+          <input class="input" id="tf-amount" inputmode="decimal" placeholder="e.g. 2500.00" autocomplete="off">
+        </label>
+        <div class="warn-line" id="tf-warn" hidden></div>
+        <div class="denom-chips" id="tf-denoms"></div>
+        <label class="field">
+          <span>Note <small class="muted">(optional)</small></span>
+          <input class="input" id="tf-note" maxlength="160" placeholder="e.g. Rent for October">
+        </label>
+        <input type="hidden" id="tf-idem">
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="tf-back" type="button" hidden>← Back</button>
+      <button class="btn btn-gold" id="tf-next" type="button" disabled>Continue →</button>
+      <button class="btn btn-gold" id="tf-submit" type="button" hidden>Send money</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="validateModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head"><h3>✓ Validate an account</h3><button class="x" data-close-modal>×</button></div>
+    <div class="modal-body">
+      <p class="muted">Check that an account number is real and active <em>before</em> sending money.</p>
+      <label class="field"><span>Account number</span>
+        <input class="input mono" id="va-number" inputmode="numeric" maxlength="12" placeholder="10-digit account number">
+      </label>
+      <div id="va-result" class="payee-slot"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-gold" id="va-go" type="button">Validate</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="notesModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head"><h3>🏧 Cash note breakdown</h3><button class="x" data-close-modal>×</button></div>
+    <div class="modal-body">
+      <p class="muted">Greedy-algorithm ATM helper — the fewest notes for any amount.</p>
+      <label class="field"><span>Amount (₹)</span>
+        <input class="input" id="dn-amount" inputmode="numeric" placeholder="e.g. 2876">
+      </label>
+      <div class="denom-chips" id="dn-result"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-gold" id="dn-go" type="button">Break down</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

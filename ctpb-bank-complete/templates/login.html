@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block body_class %}auth{% endblock %}
+{% block body %}
+<div class="auth-wrap">
+  <section class="auth-panel">
+    <a class="brand brand-lg" href="{{ url_for('auth.login') }}">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#16224a"/><stop offset="1" stop-color="#0a1128"/>
+        </linearGradient></defs>
+        <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#lg1)" stroke="#f0b429" stroke-opacity=".35"/>
+        <path d="M16 7l7 9-7 9-7-9z" fill="#f0b429"/>
+      </svg>
+      <span class="brand-name">CTPB <small>digital bank</small></span>
+    </a>
+
+    <h1 class="auth-title">Welcome back<span class="gold">.</span></h1>
+    <p class="muted">Sign in to your personal banking — check balances, validate accounts and move money in seconds.</p>
+
+    <form method="post" class="stack" novalidate>
+      <label class="field">
+        <span>Username</span>
+        <input class="input" name="username" required autocomplete="username"
+               placeholder="e.g. aarav.sharma" autofocus>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input class="input" type="password" name="password" required
+               autocomplete="current-password" placeholder="••••••••">
+      </label>
+      <button class="btn btn-gold btn-block btn-lg" type="submit">Sign in securely →</button>
+    </form>
+
+    <div class="demo-hint">
+      <span class="pulse-dot"></span>
+      <div><strong>Live demo account</strong><br>
+        <code>aarav.sharma</code> &nbsp;/&nbsp; <code>User@123</code></div>
+    </div>
+
+    <p class="switch-link">Bank staff? <a href="{{ url_for('auth.admin_login') }}">Open the admin console →</a></p>
+  </section>
+
+  <section class="auth-visual" style="background-image:url('{{ url_for('static', filename='img/login-bg.jpg') }}')">
+    <div class="visual-overlay">
+      <p class="kicker">CTPB · Computational Thinking Powered Banking</p>
+      <h2>Banking that thinks<br>in <em>microseconds</em>.</h2>
+      <ul class="ticks">
+        <li>Atomic, idempotent money transfers</li>
+        <li>Real-time balance intelligence</li>
+        <li>Proactive fraud watch on every transaction</li>
+      </ul>
+      <div class="badges">
+        <span>scrypt-hashed passwords</span><span>Row-level locking</span><span>24 × 7</span>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

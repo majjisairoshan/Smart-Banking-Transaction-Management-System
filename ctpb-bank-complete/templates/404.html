@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Not found{% endblock %}
+{% block body_class %}auth{% endblock %}
+{% block body %}
+<div class="error-wrap">
+  <div class="error-card glass">
+    <svg class="brand-mark big" viewBox="0 0 32 32"><rect x="2" y="2" width="28" height="28" rx="8" fill="#0a1128" stroke="#f0b429" stroke-opacity=".35"/><path d="M16 7l7 9-7 9-7-9z" fill="#f0b429"/></svg>
+    <h1>404</h1>
+    <p class="muted">That page is off the ledger — it doesn't exist.</p>
+    <a class="btn btn-gold" href="{{ url_for('auth.index') }}">← Back to safety</a>
+  </div>
+</div>
+{% endblock %}

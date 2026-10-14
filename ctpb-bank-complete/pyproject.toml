@@ -1,0 +1,34 @@
+[project]
+name = "ctpbd-bank"
+version = "1.0.0"
+description = "CTPB Bank — Banking Transaction System (Computational Thinking & Programming project)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+    "integration: tests that need a live PostgreSQL database (set TEST_DATABASE_URL)",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "."
+packages = ["bank"]
+warn_unused_ignores = true
+warn_return_any = true
+ignore_missing_imports = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+[tool.coverage.run]
+source = ["bank"]
+omit = ["*/tests/*"]
